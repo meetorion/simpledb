@@ -1,11 +1,12 @@
 mod meta;
 mod statement;
 use meta::do_meta_command;
-use statement::{prepare_statement, PrepareResult};
-use std::io;
+use statement::{execute_statement, prepare_statement, PrepareResult};
+use std::io::{self, Write};
 fn main() -> io::Result<()> {
     loop {
         print_prompt();
+        io::stdout().flush()?;
         let mut cmd = String::new();
         io::stdin().read_line(&mut cmd)?;
         if cmd.trim().is_empty() {
@@ -19,20 +20,26 @@ fn main() -> io::Result<()> {
                     break;
                 }
                 meta::MetaCommandResult::UnrecognizedCommand => {
-                    println!("Unrecognized meta command '{}'", cmd.trim());
+                    println!("Unrecognized command '{}'", cmd.trim());
                     continue;
                 }
             };
         }
 
-        match prepare_statement(cmd.trim()) {
+        let mut stmt: statement::Statement = statement::Statement::default();
+
+        match prepare_statement(cmd.trim(), &mut stmt) {
             PrepareResult::Success => {
-                println!("prepare success");
+                // break;
             }
             PrepareResult::UnrecognizedStatement => {
                 println!("Unrecognized keyword at start of '{}'", cmd.trim());
+                continue;
             }
         };
+
+        execute_statement(stmt);
+        println!("Executed.");
     }
 
     Ok(())
